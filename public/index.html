@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head><title>Yegna Bingo</title></head>
+<body>
+  <h1>Yegna Bingo is running!</h1>
+  <p>If you see this, the server is working.</p>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    socket.on('connect', () => console.log('Connected to server'));
+  </script>
+</body>
+</html>
