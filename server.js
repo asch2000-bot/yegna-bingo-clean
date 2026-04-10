@@ -16,7 +16,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
 
-// Health check for Render
+// Health check
 app.get("/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
@@ -67,7 +67,7 @@ function generateBingoCard() {
 }
 
 function isWinningCard(card) {
-  for (let i = 0; i < 5; i++) if (card[i].every(c => c.marked)) return true;
+  for (let i = 0; i < 5; i++) if (card[i].every(cell => cell.marked)) return true;
   for (let j = 0; j < 5; j++) {
     let col = true;
     for (let i = 0; i < 5; i++) if (!card[i][j].marked) col = false;
@@ -176,7 +176,7 @@ class BingoGame {
   }
 }
 
-// ========== API ROUTES ==========
+// ========== USER ROUTES ==========
 app.post("/api/register", (req, res) => {
   const { phone, name } = req.body;
   loadUsers();
@@ -196,6 +196,13 @@ app.get("/api/user/:userId", (req, res) => {
   res.json(users[req.params.userId] || null);
 });
 
+app.get("/api/user/phone/:phone", (req, res) => {
+  loadUsers();
+  const user = Object.values(users).find(u => u.phone === req.params.phone);
+  res.json(user || null);
+});
+
+// ========== DEPOSIT ROUTES ==========
 app.post("/api/deposit/request", (req, res) => {
   const { userId, amount, transactionText } = req.body;
   loadDeposits();
@@ -203,6 +210,18 @@ app.post("/api/deposit/request", (req, res) => {
   deposits.push(deposit);
   saveDeposits();
   res.json({ success: true, depositId: deposit.id });
+});
+
+app.get("/api/deposits/pending", (req, res) => {
+  loadDeposits();
+  const pending = deposits.filter(d => d.status === "pending");
+  res.json(pending);
+});
+
+app.get("/api/deposits/:depositId", (req, res) => {
+  loadDeposits();
+  const deposit = deposits.find(d => d.id === req.params.depositId);
+  res.json(deposit || null);
 });
 
 app.post("/api/deposit/approve", (req, res) => {
@@ -218,6 +237,7 @@ app.post("/api/deposit/approve", (req, res) => {
   } else res.json({ error: "Deposit not found" });
 });
 
+// ========== GAME ROUTES ==========
 app.get("/api/games", (req, res) => {
   loadGames();
   const activeGames = Object.values(games).filter(g => g.status === "waiting");
@@ -267,7 +287,39 @@ app.get("/api/game/:gameId", (req, res) => {
   game ? res.json(game.getState()) : res.json({ error: "Not found" });
 });
 
-// Socket.io
+// ========== ADMIN ROUTES ==========
+app.get("/api/admin/data", (req, res) => {
+  loadUsers(); loadGames();
+  const totalBalance = Object.values(users).reduce((sum, u) => sum + (u.balance || 0), 0);
+  const activeGames = Object.values(games).filter(g => g.status === "active").length;
+  const waitingGames = Object.values(games).filter(g => g.status === "waiting").length;
+  res.json({
+    totalUsers: Object.keys(users).length,
+    totalBalance,
+    activeGames,
+    waitingGames,
+    users: Object.values(users).map(u => ({
+      name: u.name, phone: u.phone, balance: u.balance,
+      gamesPlayed: u.gamesPlayed || 0, gamesWon: u.gamesWon || 0
+    }))
+  });
+});
+
+app.post("/api/admin/adjust-balance", (req, res) => {
+  const { phone, amount, type } = req.body;
+  loadUsers();
+  const user = Object.values(users).find(u => u.phone === phone);
+  if (user) {
+    if (type === "add") user.balance += amount;
+    else user.balance -= amount;
+    saveUsers();
+    res.json({ success: true, newBalance: user.balance });
+  } else {
+    res.json({ error: "User not found" });
+  }
+});
+
+// ========== SOCKET.IO ==========
 io.on("connection", (socket) => {
   console.log("Player connected");
   socket.on("joinGame", (gameId) => {
@@ -277,7 +329,7 @@ io.on("connection", (socket) => {
   });
 });
 
-// Serve frontend
+// ========== SERVE FRONTEND ==========
 app.get("/", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
 app.get("/admin", (req, res) => res.sendFile(path.join(__dirname, "public", "admin.html")));
 
