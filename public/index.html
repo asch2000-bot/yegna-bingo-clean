@@ -2,51 +2,164 @@
 <html>
 <head>
     <title>Yegna Bingo</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; padding: 16px; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            padding: 16px;
+            min-height: 100vh;
+        }
         .container { max-width: 1200px; margin: 0 auto; }
-        h1 { text-align: center; margin-bottom: 20px; }
-        .balance-card { background: linear-gradient(135deg, #e94560, #0f3460); border-radius: 12px; padding: 16px; text-align: center; margin-bottom: 20px; }
-        .balance-amount { font-size: 2em; font-weight: bold; }
-        button, .bet-option { background: #e94560; color: white; padding: 12px; border: none; border-radius: 8px; font-size: 1em; font-weight: bold; cursor: pointer; width: 100%; margin: 8px 0; }
-        input, select { width: 100%; padding: 12px; margin: 8px 0; border: none; border-radius: 8px; }
-        .card-container { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; margin-top: 20px; }
-        .bingo-card { background: white; border-radius: 12px; padding: 12px; width: 250px; }
-        .bingo-header { display: grid; grid-template-columns: repeat(5,1fr); text-align: center; margin-bottom: 8px; font-weight: bold; color: #e94560; }
-        .bingo-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 4px; }
-        .bingo-cell { background: #f0f0f0; border-radius: 6px; padding: 8px; text-align: center; font-size: 0.8em; font-weight: bold; color: #333; }
-        .bingo-cell.marked { background: linear-gradient(135deg, #e94560, #0f3460); color: white; }
-        .bingo-cell.free { background: #ffd200; color: #333; }
-        .current-number { background: rgba(255,255,255,0.1); border-radius: 12px; padding: 16px; text-align: center; margin-bottom: 20px; }
-        .number-display { font-size: 3em; font-weight: bold; color: #ffd200; }
-        .players-list { margin-top: 20px; max-height: 200px; overflow-y: auto; }
-        .player-item { background: rgba(255,255,255,0.1); padding: 8px; margin: 4px 0; border-radius: 8px; }
-        .bet-options { display: flex; gap: 10px; margin: 10px 0; }
-        .bet-option { flex: 1; text-align: center; background: rgba(255,255,255,0.2); }
+        h1 { text-align: center; margin-bottom: 20px; font-size: 1.8rem; }
+        .balance-card {
+            background: linear-gradient(135deg, #e94560, #0f3460);
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .balance-amount { font-size: 2rem; font-weight: bold; }
+        button {
+            background: #e94560;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin: 8px 0;
+        }
+        button:active { transform: scale(0.97); }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+        }
+        .card-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .bingo-card {
+            background: white;
+            border-radius: 16px;
+            padding: 12px;
+            width: 260px;
+        }
+        .bingo-header {
+            display: grid;
+            grid-template-columns: repeat(5,1fr);
+            text-align: center;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #e94560;
+        }
+        .bingo-grid {
+            display: grid;
+            grid-template-columns: repeat(5,1fr);
+            gap: 4px;
+        }
+        .bingo-cell {
+            background: #f0f0f0;
+            border-radius: 8px;
+            padding: 10px 4px;
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #333;
+        }
+        .bingo-cell.marked {
+            background: linear-gradient(135deg, #e94560, #0f3460);
+            color: white;
+        }
+        .bingo-cell.free {
+            background: #ffd200;
+            color: #333;
+        }
+        .current-number {
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 16px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .number-display {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #ffd200;
+        }
+        .players-list {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .player-item {
+            background: rgba(255,255,255,0.1);
+            padding: 8px 12px;
+            margin: 6px 0;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .bet-options {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .bet-option {
+            flex: 1;
+            text-align: center;
+            background: rgba(255,255,255,0.2);
+            padding: 12px;
+            border-radius: 12px;
+            cursor: pointer;
+        }
         .bet-option.selected { background: #e94560; }
+        .status-msg {
+            text-align: center;
+            padding: 10px;
+            margin: 10px 0;
+            background: rgba(0,0,0,0.5);
+            border-radius: 12px;
+        }
     </style>
 </head>
 <body>
 <div class="container">
     <h1>🎮 YEGNA BINGO</h1>
-    <div class="balance-card"><div>💰 MY BALANCE</div><div class="balance-amount" id="balanceAmount">0</div><div>Birr</div></div>
+    <div class="balance-card">
+        <div>💰 MY BALANCE</div>
+        <div class="balance-amount" id="balanceAmount">0</div>
+        <div>Birr</div>
+    </div>
 
     <div id="loginSection">
         <input type="text" id="phoneNumber" placeholder="Phone (0912345678)">
         <input type="text" id="playerName" placeholder="Your name">
         <button onclick="register()">🔓 REGISTER / LOGIN</button>
-        <p style="font-size:0.8em; margin-top:10px;">After login, deposit via Telegram bot or admin panel.</p>
+        <div class="status-msg">✨ New users get 10 Birr welcome bonus!</div>
     </div>
 
     <div id="gameSection" style="display:none">
-        <div class="current-number"><div>🎲 CURRENT NUMBER</div><div class="number-display" id="currentNumber">-</div></div>
+        <div class="current-number">
+            <div>🎲 CURRENT NUMBER</div>
+            <div class="number-display" id="currentNumber">-</div>
+        </div>
         <div id="gameActions">
             <button onclick="createGame()">✨ CREATE NEW GAME</button>
             <button onclick="showJoinDialog()">🎯 JOIN GAME</button>
         </div>
-        <div id="joinDialog" style="display:none; margin-top:20px; background:rgba(0,0,0,0.5); padding:16px; border-radius:12px">
+        <div id="joinDialog" style="display:none; margin-top:20px; background:rgba(0,0,0,0.5); padding:16px; border-radius:16px">
             <h3>Join Game</h3>
             <input type="text" id="joinGameId" placeholder="Game ID">
             <div>Number of cards (1-3): <input type="number" id="numCards" min="1" max="3" value="1"></div>
@@ -60,15 +173,17 @@
             <button onclick="joinGame()">Confirm & Pay</button>
             <button onclick="cancelJoin()">Cancel</button>
         </div>
-        <div id="hostActions" style="display:none"><button onclick="startGame()">🚀 START GAME</button></div>
+        <div id="hostActions" style="display:none"><button onclick="startGame()">🚀 START GAME NOW</button></div>
         <div id="cardsContainer" class="card-container"></div>
         <div id="playersInfo"><h3>👥 Players</h3><div class="players-list" id="playersList"></div></div>
+        <div class="status-msg" id="autoStartMsg">⏳ Game will auto-start 60 seconds after creation</div>
     </div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
     let socket, currentUser = null, currentGameId = null, isHost = false, selectedBet = 10;
+    
     document.querySelectorAll('.bet-option').forEach(opt => {
         opt.onclick = () => {
             document.querySelectorAll('.bet-option').forEach(o=>o.classList.remove('selected'));
@@ -81,28 +196,44 @@
     async function register() {
         const phone = document.getElementById('phoneNumber').value.trim();
         const name = document.getElementById('playerName').value.trim();
-        if(!phone || phone.length!==10) return alert('Valid 10-digit phone');
-        if(!name) return alert('Enter name');
-        const res = await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,name,telegramId:null})});
+        if(!phone || phone.length !== 10) return alert('Enter valid 10-digit phone number');
+        if(!name) return alert('Enter your name');
+        
+        const res = await fetch('/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone, name })
+        });
         const data = await res.json();
-        if(data.success){
-            currentUser = {id:data.userId, name, phone, balance:data.balance};
+        if(data.success) {
+            currentUser = { id: data.userId, name, phone, balance: data.balance };
             document.getElementById('balanceAmount').innerText = data.balance;
             document.getElementById('loginSection').style.display = 'none';
             document.getElementById('gameSection').style.display = 'block';
+            if(data.welcomeBonus) alert('🎉 Welcome! You received 10 Birr bonus!');
             connectSocket();
             loadGames();
-        } else alert('Registration failed');
+        } else {
+            alert('Registration failed');
+        }
     }
 
-    function connectSocket(){
+    function connectSocket() {
         socket = io();
-        socket.on('gameState', (game)=>{ if(game.id===currentGameId) updateUI(game); });
-        socket.on('numberCalled', (data)=>{ 
+        socket.on('gameState', (game) => {
+            if(game && game.id === currentGameId) updateUI(game);
+        });
+        socket.on('numberCalled', (data) => {
             document.getElementById('currentNumber').innerText = data.number;
             speakNumber(data.number);
         });
-        socket.on('gameEnded', (data)=>{ alert(`🎉 GAME OVER! Winner: ${data.winner} won ${data.prize} Birr!`); location.reload(); });
+        socket.on('gameStarted', () => {
+            document.getElementById('autoStartMsg').innerHTML = '🎲 GAME STARTED! Numbers are being called...';
+        });
+        socket.on('gameEnded', (data) => {
+            alert(`🎉 GAME OVER! Winner: ${data.winner} won ${data.prize} Birr! 🎉`);
+            location.reload();
+        });
     }
 
     function speakNumber(number) {
@@ -115,54 +246,72 @@
         }
     }
 
-    async function createGame(){
-        const res = await fetch('/api/game/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hostId:currentUser.id, hostName:currentUser.name})});
+    async function createGame() {
+        const res = await fetch('/api/game/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ hostId: currentUser.id, hostName: currentUser.name })
+        });
         const data = await res.json();
-        if(data.success){
+        if(data.success) {
             currentGameId = data.gameId;
             isHost = true;
             document.getElementById('hostActions').style.display = 'block';
             document.getElementById('gameActions').style.display = 'none';
             socket.emit('joinGame', currentGameId);
-            alert(`Game created! ID: ${currentGameId}. Share with friends.`);
-        } else alert('Failed to create game');
+            alert(`Game created! ID: ${currentGameId}\nGame will auto-start in 60 seconds!`);
+        }
     }
 
-    function showJoinDialog(){
+    function showJoinDialog() {
         document.getElementById('joinDialog').style.display = 'block';
         document.getElementById('gameActions').style.display = 'none';
     }
-    function cancelJoin(){
+    function cancelJoin() {
         document.getElementById('joinDialog').style.display = 'none';
         document.getElementById('gameActions').style.display = 'block';
     }
-    async function joinGame(){
+
+    async function joinGame() {
         const gameId = document.getElementById('joinGameId').value.trim();
         const numCards = parseInt(document.getElementById('numCards').value);
         if(!gameId) return alert('Enter Game ID');
-        if(numCards<1 || numCards>3) return alert('Cards must be 1-3');
+        if(numCards < 1 || numCards > 3) return alert('Cards must be 1-3');
         const betPerCard = selectedBet;
-        const res = await fetch('/api/game/join',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gameId, playerId:currentUser.id, playerName:currentUser.name, numCards, betPerCard})});
+        const res = await fetch('/api/game/join', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ gameId, playerId: currentUser.id, playerName: currentUser.name, numCards, betPerCard })
+        });
         const data = await res.json();
-        if(data.success){
+        if(data.success) {
             currentGameId = gameId;
             document.getElementById('balanceAmount').innerText = data.newBalance;
             document.getElementById('joinDialog').style.display = 'none';
             socket.emit('joinGame', currentGameId);
-            alert('Joined game! Waiting for host to start.');
-        } else alert(data.error);
+            alert('Joined game! Waiting for auto-start (60 seconds)...');
+        } else {
+            alert(data.error);
+        }
     }
-    async function startGame(){
-        const res = await fetch('/api/game/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gameId:currentGameId, hostId:currentUser.id})});
+
+    async function startGame() {
+        const res = await fetch('/api/game/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ gameId: currentGameId, hostId: currentUser.id })
+        });
         const data = await res.json();
-        if(data.success) alert('Game started! Numbers will be called.');
+        if(data.success) alert('Game started!');
         else alert(data.error);
     }
-    function updateUI(game){
+
+    function updateUI(game) {
         const playersDiv = document.getElementById('playersList');
         playersDiv.innerHTML = game.players.map(p => `<div class="player-item">${p.name} (bet: ${p.totalBet} Birr) ${p.hasWon ? '🏆 WON' : ''}</div>`).join('');
+        
         const myPlayer = game.players.find(p => p.id === currentUser.id);
-        if(myPlayer){
+        if(myPlayer) {
             const container = document.getElementById('cardsContainer');
             container.innerHTML = '';
             myPlayer.cards.forEach((card, idx) => {
@@ -171,8 +320,8 @@
                 cardDiv.innerHTML = `<div class="bingo-header">${['B','I','N','G','O'].map(l=>`<div>${l}</div>`).join('')}</div><div class="bingo-grid" id="card-${idx}"></div>`;
                 container.appendChild(cardDiv);
                 const grid = cardDiv.querySelector(`.bingo-grid`);
-                for(let i=0;i<5;i++){
-                    for(let j=0;j<5;j++){
+                for(let i=0;i<5;i++) {
+                    for(let j=0;j<5;j++) {
                         const cell = card[i][j];
                         const cellDiv = document.createElement('div');
                         cellDiv.className = 'bingo-cell' + (cell.marked ? ' marked' : '') + (cell.value === 'FREE' ? ' free' : '');
@@ -183,11 +332,14 @@
             });
         }
         if(game.currentNumber) document.getElementById('currentNumber').innerText = game.currentNumber;
+        if(game.status === 'active') document.getElementById('autoStartMsg').innerHTML = '🎲 GAME ACTIVE! Numbers being called...';
+        else if(game.status === 'waiting') document.getElementById('autoStartMsg').innerHTML = '⏳ Game will auto-start in 60 seconds...';
     }
-    async function loadGames(){
+
+    async function loadGames() {
         const res = await fetch('/api/games');
-        const games = await res.json();
-        if(games.length) document.getElementById('gameActions').style.display = 'block';
+        const gamesList = await res.json();
+        if(gamesList.length) document.getElementById('gameActions').style.display = 'block';
     }
 </script>
 </body>
