@@ -133,7 +133,7 @@
             border-radius: 12px;
         }
         .countdown {
-            font-size: 2rem;
+            font-size: 1.5rem;
             font-weight: bold;
             color: #ffd200;
             text-align: center;
@@ -163,7 +163,7 @@
             <div class="number-display" id="currentNumber">-</div>
         </div>
         
-        <div class="status-msg" id="gameStatus">⏳ Waiting for game to start...</div>
+        <div class="status-msg" id="gameStatus">⏳ Click PLAY BINGO to join the game!</div>
         <div class="countdown" id="countdown"></div>
         
         <div id="playSection">
@@ -283,6 +283,7 @@
             
             if(data.waitingTime > 0) {
                 startCountdown(data.waitingTime);
+                document.getElementById('gameStatus').innerHTML = '⏳ Game starts in ' + data.waitingTime + ' seconds!';
             }
         } else {
             alert(data.error);
@@ -298,6 +299,7 @@
                 document.getElementById('countdown').innerHTML = '🚀 GAME STARTING NOW!';
             } else {
                 document.getElementById('countdown').innerHTML = `⏰ Game starts in ${timeLeft} seconds`;
+                document.getElementById('gameStatus').innerHTML = `⏳ Game starts in ${timeLeft} seconds!`;
             }
             timeLeft--;
         }, 1000);
@@ -309,23 +311,22 @@
         if(state && state.id) {
             gameState = state;
             updateUI(state);
-            if(state.status === 'waiting' && state.createdAt) {
-                const elapsed = Math.floor((Date.now() - state.createdAt) / 1000);
-                const remaining = Math.max(0, 60 - elapsed);
-                if(remaining > 0) startCountdown(remaining);
-            }
         }
-        socket.emit('joinGame');
+        if(socket) socket.emit('joinGame');
     }
 
     function updateUI(game) {
         if(!game) return;
         
         const playersDiv = document.getElementById('playersList');
-        playersDiv.innerHTML = game.players.map(p => `<div class="player-item">${p.name} (bet: ${p.totalBet} Birr) ${p.hasWon ? '🏆 WON' : ''}</div>`).join('');
+        if(game.players && game.players.length > 0) {
+            playersDiv.innerHTML = game.players.map(p => `<div class="player-item">${p.name} (bet: ${p.totalBet} Birr) ${p.hasWon ? '🏆 WON' : ''}</div>`).join('');
+        } else {
+            playersDiv.innerHTML = '<div class="player-item">No players yet. Be the first!</div>';
+        }
         
-        const myPlayer = game.players.find(p => p.id === currentUser?.id);
-        if(myPlayer) {
+        const myPlayer = game.players?.find(p => p.id === currentUser?.id);
+        if(myPlayer && myPlayer.cards) {
             const container = document.getElementById('cardsContainer');
             container.innerHTML = '';
             myPlayer.cards.forEach((card, idx) => {
@@ -345,10 +346,6 @@
                 }
             });
             document.getElementById('playSection').style.display = 'none';
-        } else {
-            if(game.status === 'waiting') {
-                document.getElementById('playSection').style.display = 'block';
-            }
         }
         
         if(game.currentNumber) document.getElementById('currentNumber').innerText = game.currentNumber;
@@ -358,13 +355,14 @@
             if(countdownInterval) clearInterval(countdownInterval);
             document.getElementById('countdown').innerHTML = '';
         } else if(game.status === 'waiting') {
-            document.getElementById('gameStatus').innerHTML = '⏳ Waiting for game to start...';
-        } else if(game.status === 'finished') {
-            document.getElementById('gameStatus').innerHTML = '🏆 Game finished! New game starting soon...';
+            if(game.players?.length === 0) {
+                document.getElementById('gameStatus').innerHTML = '⏳ No game active. Click PLAY BINGO to start!';
+            } else {
+                document.getElementById('gameStatus').innerHTML = '⏳ Waiting for game to start...';
+            }
         }
     }
 
-    // Auto-refresh game state every 2 seconds
     setInterval(loadGameState, 2000);
 </script>
 </body>
