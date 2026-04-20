@@ -12,7 +12,7 @@
             padding: 16px;
             min-height: 100vh;
         }
-        .container { max-width: 1200px; margin: 0 auto; }
+        .container { max-width: 800px; margin: 0 auto; }
         h1 { text-align: center; margin-bottom: 20px; font-size: 1.8rem; }
         .balance-card {
             background: linear-gradient(135deg, #e94560, #0f3460);
@@ -25,10 +25,10 @@
         button {
             background: #e94560;
             color: white;
-            padding: 12px;
+            padding: 16px;
             border: none;
             border-radius: 12px;
-            font-size: 1rem;
+            font-size: 1.2rem;
             font-weight: bold;
             cursor: pointer;
             width: 100%;
@@ -54,7 +54,7 @@
             background: white;
             border-radius: 16px;
             padding: 12px;
-            width: 260px;
+            width: 280px;
         }
         .bingo-header {
             display: grid;
@@ -132,6 +132,13 @@
             background: rgba(0,0,0,0.5);
             border-radius: 12px;
         }
+        .countdown {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ffd200;
+            text-align: center;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -155,13 +162,11 @@
             <div>🎲 CURRENT NUMBER</div>
             <div class="number-display" id="currentNumber">-</div>
         </div>
-        <div id="gameActions">
-            <button onclick="createGame()">✨ CREATE NEW GAME</button>
-            <button onclick="showJoinDialog()">🎯 JOIN GAME</button>
-        </div>
-        <div id="joinDialog" style="display:none; margin-top:20px; background:rgba(0,0,0,0.5); padding:16px; border-radius:16px">
-            <h3>Join Game</h3>
-            <input type="text" id="joinGameId" placeholder="Game ID">
+        
+        <div class="status-msg" id="gameStatus">⏳ Waiting for game to start...</div>
+        <div class="countdown" id="countdown"></div>
+        
+        <div id="playSection">
             <div>Number of cards (1-3): <input type="number" id="numCards" min="1" max="3" value="1"></div>
             <div>Bet per card (Birr):</div>
             <div class="bet-options" id="betOptions">
@@ -170,19 +175,19 @@
                 <div class="bet-option" data-bet="50">50</div>
                 <div class="bet-option" data-bet="100">100</div>
             </div>
-            <button onclick="joinGame()">Confirm & Pay</button>
-            <button onclick="cancelJoin()">Cancel</button>
+            <button onclick="playGame()">🎮 PLAY BINGO</button>
         </div>
-        <div id="hostActions" style="display:none"><button onclick="startGame()">🚀 START GAME NOW</button></div>
+        
         <div id="cardsContainer" class="card-container"></div>
-        <div id="playersInfo"><h3>👥 Players</h3><div class="players-list" id="playersList"></div></div>
-        <div class="status-msg" id="autoStartMsg">⏳ Game will auto-start 60 seconds after creation</div>
+        <div id="playersInfo"><h3>👥 Players in Game</h3><div class="players-list" id="playersList"></div></div>
     </div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-    let socket, currentUser = null, currentGameId = null, isHost = false, selectedBet = 10;
+    let socket, currentUser = null, selectedBet = 10;
+    let gameState = null;
+    let countdownInterval = null;
     
     document.querySelectorAll('.bet-option').forEach(opt => {
         opt.onclick = () => {
@@ -212,7 +217,7 @@
             document.getElementById('gameSection').style.display = 'block';
             if(data.welcomeBonus) alert('🎉 Welcome! You received 10 Birr bonus!');
             connectSocket();
-            loadGames();
+            loadGameState();
         } else {
             alert('Registration failed');
         }
@@ -220,19 +225,26 @@
 
     function connectSocket() {
         socket = io();
+        
         socket.on('gameState', (game) => {
-            if(game && game.id === currentGameId) updateUI(game);
+            gameState = game;
+            updateUI(game);
         });
+        
         socket.on('numberCalled', (data) => {
             document.getElementById('currentNumber').innerText = data.number;
             speakNumber(data.number);
         });
+        
         socket.on('gameStarted', () => {
-            document.getElementById('autoStartMsg').innerHTML = '🎲 GAME STARTED! Numbers are being called...';
+            document.getElementById('gameStatus').innerHTML = '🎲 GAME ACTIVE! Numbers are being called...';
+            if(countdownInterval) clearInterval(countdownInterval);
+            document.getElementById('countdown').innerHTML = '';
         });
+        
         socket.on('gameEnded', (data) => {
             alert(`🎉 GAME OVER! Winner: ${data.winner} won ${data.prize} Birr! 🎉`);
-            location.reload();
+            loadGameState();
         });
     }
 
@@ -246,71 +258,73 @@
         }
     }
 
-    async function createGame() {
-        const res = await fetch('/api/game/create', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ hostId: currentUser.id, hostName: currentUser.name })
-        });
-        const data = await res.json();
-        if(data.success) {
-            currentGameId = data.gameId;
-            isHost = true;
-            document.getElementById('hostActions').style.display = 'block';
-            document.getElementById('gameActions').style.display = 'none';
-            socket.emit('joinGame', currentGameId);
-            alert(`Game created! ID: ${currentGameId}\nGame will auto-start in 60 seconds!`);
-        }
-    }
-
-    function showJoinDialog() {
-        document.getElementById('joinDialog').style.display = 'block';
-        document.getElementById('gameActions').style.display = 'none';
-    }
-    function cancelJoin() {
-        document.getElementById('joinDialog').style.display = 'none';
-        document.getElementById('gameActions').style.display = 'block';
-    }
-
-    async function joinGame() {
-        const gameId = document.getElementById('joinGameId').value.trim();
+    async function playGame() {
         const numCards = parseInt(document.getElementById('numCards').value);
-        if(!gameId) return alert('Enter Game ID');
         if(numCards < 1 || numCards > 3) return alert('Cards must be 1-3');
         const betPerCard = selectedBet;
-        const res = await fetch('/api/game/join', {
+        
+        const res = await fetch('/api/game/play', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ gameId, playerId: currentUser.id, playerName: currentUser.name, numCards, betPerCard })
+            body: JSON.stringify({ 
+                playerId: currentUser.id, 
+                playerName: currentUser.name, 
+                numCards, 
+                betPerCard 
+            })
         });
         const data = await res.json();
+        
         if(data.success) {
-            currentGameId = gameId;
             document.getElementById('balanceAmount').innerText = data.newBalance;
-            document.getElementById('joinDialog').style.display = 'none';
-            socket.emit('joinGame', currentGameId);
-            alert('Joined game! Waiting for auto-start (60 seconds)...');
+            document.getElementById('playSection').style.display = 'none';
+            gameState = data.gameState;
+            updateUI(gameState);
+            
+            if(data.waitingTime > 0) {
+                startCountdown(data.waitingTime);
+            }
         } else {
             alert(data.error);
         }
     }
 
-    async function startGame() {
-        const res = await fetch('/api/game/start', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ gameId: currentGameId, hostId: currentUser.id })
-        });
-        const data = await res.json();
-        if(data.success) alert('Game started!');
-        else alert(data.error);
+    function startCountdown(seconds) {
+        let timeLeft = seconds;
+        if(countdownInterval) clearInterval(countdownInterval);
+        countdownInterval = setInterval(() => {
+            if(timeLeft <= 0) {
+                clearInterval(countdownInterval);
+                document.getElementById('countdown').innerHTML = '🚀 GAME STARTING NOW!';
+            } else {
+                document.getElementById('countdown').innerHTML = `⏰ Game starts in ${timeLeft} seconds`;
+            }
+            timeLeft--;
+        }, 1000);
+    }
+
+    async function loadGameState() {
+        const res = await fetch('/api/game/state');
+        const state = await res.json();
+        if(state && state.id) {
+            gameState = state;
+            updateUI(state);
+            if(state.status === 'waiting' && state.createdAt) {
+                const elapsed = Math.floor((Date.now() - state.createdAt) / 1000);
+                const remaining = Math.max(0, 60 - elapsed);
+                if(remaining > 0) startCountdown(remaining);
+            }
+        }
+        socket.emit('joinGame');
     }
 
     function updateUI(game) {
+        if(!game) return;
+        
         const playersDiv = document.getElementById('playersList');
         playersDiv.innerHTML = game.players.map(p => `<div class="player-item">${p.name} (bet: ${p.totalBet} Birr) ${p.hasWon ? '🏆 WON' : ''}</div>`).join('');
         
-        const myPlayer = game.players.find(p => p.id === currentUser.id);
+        const myPlayer = game.players.find(p => p.id === currentUser?.id);
         if(myPlayer) {
             const container = document.getElementById('cardsContainer');
             container.innerHTML = '';
@@ -330,17 +344,28 @@
                     }
                 }
             });
+            document.getElementById('playSection').style.display = 'none';
+        } else {
+            if(game.status === 'waiting') {
+                document.getElementById('playSection').style.display = 'block';
+            }
         }
+        
         if(game.currentNumber) document.getElementById('currentNumber').innerText = game.currentNumber;
-        if(game.status === 'active') document.getElementById('autoStartMsg').innerHTML = '🎲 GAME ACTIVE! Numbers being called...';
-        else if(game.status === 'waiting') document.getElementById('autoStartMsg').innerHTML = '⏳ Game will auto-start in 60 seconds...';
+        
+        if(game.status === 'active') {
+            document.getElementById('gameStatus').innerHTML = '🎲 GAME ACTIVE! Numbers are being called...';
+            if(countdownInterval) clearInterval(countdownInterval);
+            document.getElementById('countdown').innerHTML = '';
+        } else if(game.status === 'waiting') {
+            document.getElementById('gameStatus').innerHTML = '⏳ Waiting for game to start...';
+        } else if(game.status === 'finished') {
+            document.getElementById('gameStatus').innerHTML = '🏆 Game finished! New game starting soon...';
+        }
     }
 
-    async function loadGames() {
-        const res = await fetch('/api/games');
-        const gamesList = await res.json();
-        if(gamesList.length) document.getElementById('gameActions').style.display = 'block';
-    }
+    // Auto-refresh game state every 2 seconds
+    setInterval(loadGameState, 2000);
 </script>
 </body>
 </html>
